@@ -27,4 +27,7 @@ def update_stock(self,stockpicker):
     while not que.empty():
         res=que.get()
         data.update(res)
+        
     print(data)
+
+    return "Done"
