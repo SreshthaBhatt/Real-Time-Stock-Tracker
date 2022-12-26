@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from threading import Thread
 from time import sleep
 from queue import Queue
+from asgiref.sync import sync_to_async
 
 # Create your views here.
 
@@ -12,7 +13,17 @@ def stockPicker(request):
     print(stock_picker)
     return render(request,'app/stockpicker.html',{'stockpicker':stock_picker})
 
-def stockTracker(request):
+@sync_to_async
+def checkAuthenticated(request):
+    if not request.user.is_authenticated:
+        return False
+    else:
+        return True
+
+async def stockTracker(request):
+    is_loginned = await checkAuthenticated(request)
+    if not is_loginned:
+        return HttpResponse("Login First")
     stockpicker=request.GET.getlist('stockpicker')
     print(stockpicker)
     data={}
@@ -37,11 +48,6 @@ def stockTracker(request):
     while not que.empty():
         res=que.get()
         data.update(res)
-
-    # for i in stockpicker:
-    #     details=get_quote_table(i)
-    #     data.update({i:details})
-
     
     print(data)
-    return render(request,'app/stocktracker.html',{'data':data})
+    return render(request,'app/stocktracker.html',{'data':data,'room_name':'track'})

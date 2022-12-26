@@ -2,6 +2,8 @@ from celery import shared_task
 from yahoo_fin.stock_info import *
 from threading import Thread
 from queue import Queue
+from asyncio.events import new_event_loop,set_event_loop
+from channels.layers import get_channel_layer
 
 @shared_task(bind=True)
 def update_stock(self,stockpicker):
@@ -27,7 +29,19 @@ def update_stock(self,stockpicker):
     while not que.empty():
         res=que.get()
         data.update(res)
-        
+
     print(data)
+
+    channel_layer = get_channel_layer()
+    loop = new_event_loop()
+
+    set_event_loop(loop)
+    loop.run_until_complete(channel_layer.group_send(
+        "stock_track",
+        {
+            'type':'send_stock_update',
+            'message':data
+        }
+    ))
 
     return "Done"
